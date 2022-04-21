@@ -1,4 +1,3 @@
-use glfw::{Action, Key, Modifiers};
 use wgpu::include_wgsl;
 
 pub struct State {
@@ -8,20 +7,19 @@ pub struct State {
     pub config: wgpu::SurfaceConfiguration,
     pub render_pipeline: wgpu::RenderPipeline,
 
-    pub width: i32,
-    pub height: i32,
+    pub size: winit::dpi::PhysicalSize<u32>,
 }
 
 impl State {
     // Creating some of the wgpu types requires async code
-    pub async fn new(window: &glfw::Window) -> Self {
-        let (width, height) = window.get_size();
-        let instance = wgpu::Instance::new(wgpu::Backends::GL);
+    pub async fn new(window: &winit::window::Window) -> Self {
+        let size = window.inner_size();
+        let instance = wgpu::Instance::new(wgpu::Backends::VULKAN);
 
         let surface = unsafe { instance.create_surface(window) };
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
-                power_preference: wgpu::PowerPreference::LowPower,
+                power_preference: wgpu::PowerPreference::HighPerformance,
                 compatible_surface: Some(&surface),
                 force_fallback_adapter: false,
             })
@@ -32,8 +30,6 @@ impl State {
             .request_device(
                 &wgpu::DeviceDescriptor {
                     features: wgpu::Features::empty(),
-                    // WebGL doesn't support all of wgpu's features, so if
-                    // we're building for the web we'll have to disable some.
                     limits: wgpu::Limits::default(),
                     label: None,
                 },
@@ -45,17 +41,12 @@ impl State {
         let config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             format: surface.get_preferred_format(&adapter).unwrap(),
-            width: width as u32,
-            height: height as u32,
+            width: size.width,
+            height: size.height,
             present_mode: wgpu::PresentMode::Fifo,
         };
 
         surface.configure(&device, &config);
-
-        // let shader = device.create_shader_module(&wgpu::ShaderModuleDescriptor {
-        //     label: Some("Shader"),
-        //     source: wgpu::ShaderSource::Wgsl(include_str!("shader.wgsl").into()),
-        // });
 
         let shader = device.create_shader_module(&include_wgsl!("shader.wgsl"));
 
@@ -110,28 +101,27 @@ impl State {
             device,
             queue,
             config,
-            width,
-            height,
+            size,
             render_pipeline,
         }
     }
 
-    pub fn resize(&mut self, width: i32, height: i32) {
-        if width > 0 && height > 0 {
-            self.width = width.clone();
-            self.height = height.clone();
-            self.config.width = width as u32;
-            self.config.height = height as u32;
+    pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
+        if new_size.width > 0 && new_size.height > 0 {
+            self.size = new_size;
+            self.config.width = new_size.width;
+            self.config.height = new_size.height;
             self.surface.configure(&self.device, &self.config);
         }
+        
     }
 
-    pub fn input(&mut self, key: Key, _code: &i32, _action: &Action, mods: &Modifiers) -> bool {
-        if key == Key::Q && mods == &Modifiers::Control {
-            return false;
-        }
+    pub fn input(&mut self) -> bool {
+        // if key == Key::Q && mods == &Modifiers::Control {
+        //     return false;
+        // }
 
-        true
+        false
     }
 
     pub fn update(&mut self) {
@@ -163,6 +153,7 @@ impl State {
                             a: 1.0,
                         }),
                         store: true,
+                        
                     },
                 }],
                 depth_stencil_attachment: None,
