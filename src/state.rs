@@ -14,7 +14,7 @@ impl State {
     // Creating some of the wgpu types requires async code
     pub async fn new(window: &winit::window::Window) -> Self {
         let size = window.inner_size();
-        let instance = wgpu::Instance::new(wgpu::Backends::VULKAN);
+        let instance = wgpu::Instance::new(wgpu::Backends::GL);
 
         let surface = unsafe { instance.create_surface(window) };
         let adapter = instance
@@ -43,7 +43,7 @@ impl State {
             format: surface.get_preferred_format(&adapter).unwrap(),
             width: size.width,
             height: size.height,
-            present_mode: wgpu::PresentMode::Fifo,
+            present_mode: wgpu::PresentMode::Immediate,
         };
 
         surface.configure(&device, &config);
@@ -113,7 +113,6 @@ impl State {
             self.config.height = new_size.height;
             self.surface.configure(&self.device, &self.config);
         }
-        
     }
 
     pub fn input(&mut self) -> bool {
