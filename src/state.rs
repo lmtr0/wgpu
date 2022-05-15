@@ -14,7 +14,11 @@ impl State {
     // Creating some of the wgpu types requires async code
     pub async fn new(window: &winit::window::Window) -> Self {
         let size = window.inner_size();
-        let instance = wgpu::Instance::new(wgpu::Backends::GL);
+        let instance = wgpu::Instance::new(wgpu::Backends::all());
+
+        for adapter in instance.enumerate_adapters(wgpu::Backends::all()) {
+            println!("{:?}", adapter.get_info())
+        }
 
         let surface = unsafe { instance.create_surface(window) };
         let adapter = instance
